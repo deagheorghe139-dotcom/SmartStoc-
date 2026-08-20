@@ -1,0 +1,63 @@
+import datetime
+
+produse_stoc = [
+    {"id": "5941234560012", "nume": "Iaurt Natural 150g", "pret_intreg": 7.69, "data_expirare": "2026-08-22"},
+    {"id": "5941234560029", "nume": "Lapte UHT 1L", "pret_intreg": 9.50, "data_expirare": "2026-08-28"},
+    {"id": "5941234560036", "nume": "Brânză Feta 200g", "pret_intreg": 14.20, "data_expirare": "2026-08-20"},
+    {"id": "5941234560043", "nume": "Salam Banățean", "pret_intreg": 22.00, "data_expirare": "2026-09-15"}
+]
+
+statistici = {
+    "total_scanate": 0,
+    "produse_reduse": 0,
+    "pierderi_salvate_ron": 0.0
+}
+
+def calculeaza_reducere_dinamica(data_expirare_str, pret_intreg):
+    data_curenta = datetime.date.today()
+    data_expirare = datetime.datetime.strptime(data_expirare_str, "%Y-%m-%d").date()
+    zile_ramase = (data_expirare - data_curenta).days
+    
+    if zile_ramase < 0:
+        return 0.0, 0.0, "EXPIRAT (Retrage de la raft)"
+    elif zile_ramase == 0:
+        # Reducere 60% -> Prețul nou devine 40% din cel inițial
+        pret_nou = round(pret_intreg * 0.40, 2)
+        return pret_nou, "-60% (Ultima zi!)"
+    elif zile_ramase <= 2:
+        # Reducere 30% -> Prețul nou devine 70% din cel inițial
+        pret_nou = round(pret_intreg * 0.70, 2)
+        return pret_nou, "-30% (Aproape de expirare)"
+    else:
+        return pret_intreg, "Preț Normal"
+
+def proceseaza_scanare_produs(cod_bare):
+    global statistici
+    statistici["total_scanate"] += 1
+    
+    produs = next((p for p in produse_stoc if p["id"] == cod_bare), None)
+    if not produs:
+        return
+
+    rezultat_pret, status = calculeaza_reducere_dinamica(produs["data_expirare"], produs["pret_intreg"])
+    
+    print(f"\n--- SmartStoc: Scanare {produs['nume']} ---")
+    print(f"Data expirare: {produs['data_expirare']} | Status: {status}")
+    print(f"Preț vechi: {produs['pret_intreg']} RON")
+    
+    if rezultat_pret < produs["pret_intreg"] and rezultat_pret > 0:
+        statistici["produse_reduse"] += 1
+        statistici["pierderi_salvate_ron"] += (produs["pret_intreg"] - rezultat_pret)
+        print(f"Preț nou propus: {rezultat_pret} RON")
+    elif resultado_pret == 0:
+        print("⚠️ ALERTĂ: Produsul trebuie aruncat!")
+
+if __name__ == "__main__":
+    proceseaza_scanare_produs("5941234560012")
+    proceseaza_scanare_produs("5941234560036")
+    proceseaza_scanare_produs("5941234560043")
+    
+    print("\n=== RAPOARTE & STATISTICI SMARTSTOC ===")
+    print(f"Total produse verificate la raft: {statistici['total_scanate']}")
+    print(f"Total etichete de reducere emise: {statistici['produse_reduse']}")
+    print(f"Pierderi financiare salvate: {round(statistici['pierderi_salvate_ron'], 2)} RON")
